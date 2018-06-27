@@ -2,17 +2,21 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
 #define TOK_SIZE 64
 #define TOK_DELIMS " \t\r\n\a"
-
 #define LSH_RL_BUFSIZE 1024
-char* readLine();
+
+char* read_line();
+char** split_line (char* line);
 int lsh_cd(char** argv);
 void lsh_help();
-char** split_line (char* line);
+int lsh_exit();
 int exec_args (char** args);
 
+// global variable
 char* lsh_help_content[] = {"cd", "help", "exit"};
+
 
 int main(int argc, char* argv[]) {
   char* line;
@@ -34,22 +38,21 @@ int main(int argc, char* argv[]) {
 }
 
 
-int exec_args (char** args)
-{
+// int exec_args (char** args)
+// {
+//
+// }
 
-}
 
 
-
-char* readLine(){
+char* read_line(){
   int bufferSize = LSH_RL_BUFSIZE;
   int position = 0;
   char* buffer = malloc(sizeof(char) * bufferSize);
   char c;
 
   while(1){
-    // c = getchar();   // or c = getc(stdin);
-    c = getc(stdin);
+    c = getchar();   // or c = getc(stdin);
     if (c == EOF || c == '\n') {
       buffer[position] = '\0';
       return buffer;
@@ -102,11 +105,11 @@ char** split_line (char* line)
 
 int lsh_cd(char** argv){
   if (strcmp(argv[0], "cd") != 0){
-    fprintf(stderr, "not cd command\n");
+    fprintf(stderr, "ERROR: not 'cd' command\n");
     exit(EXIT_FAILURE);
   }
   if (!argv[1]) {
-    fprintf(stderr, "error\n");
+    fprintf(stderr, "ERROR\n");
     exit(EXIT_FAILURE);
   }
   if (chdir(argv[1]) != 0){
@@ -120,7 +123,7 @@ int lsh_cd(char** argv){
 
 void lsh_help(){
   int content_size = sizeof(lsh_help_content) / sizeof(char*);
-  printf("Weiran's shell content:\n");
+  printf("Weiran and Jianhui's shell content:\n");
   int i;
 
   for(i = 0; i < content_size; i++){
@@ -135,4 +138,8 @@ void lsh_help(){
     }
   }
   printf("Use the man command for information on other programs.\n");
+}
+
+int lsh_exit(){
+  return 0;
 }
