@@ -2,42 +2,50 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define TOK_SIZE 64
 #define TOK_DELIMS " \t\r\n\a"
 #define MYSH_RL_BUFSIZE 1024
 
 // global variable
-char* mysh_builtins[] = { "cd", "help", "exit" };
+char* mysh_builtins[] = { "cd", "help", "exit", "run" };
+char cwd[1024];
 
-char* read_line();
+char* read_line ();
 char** split_line (char* line);
 int exec_args (char** argv);
 
-int mysh_cd(char** argv);
-int mysh_help(char** argv);
-int mysh_exit(char** argv);
+int mysh_cd (char** argv);
+int mysh_help (char** argv);
+int mysh_exit (char** argv);
+int mysh_run (char** argv);
 int num_builtins();
 
 int (*builtin_funcs[]) (char** argv) = {
   & mysh_cd,
   & mysh_help,
-  & mysh_exit
+  & mysh_exit,
+  & mysh_run
 };
 
-int main(int argc, char* argv[]) {
+int main() {
   char* line;
-  char** args;
-  int status = 1;
+  char** argv;
+  int status;
 
   do {
-    printf("> ");
+    if (getcwd ( cwd, sizeof(cwd) ) == NULL) {
+      perror("getcwd() failed..");
+    }
+    printf("%s > ", cwd);
     line = read_line ();
-    args = split_line (line);
-    status = exec_args (args);
+    argv = split_line (line);
+    status = exec_args (argv);
 
     free (line);
-    free (args);
+    free (argv);
 
   } while (status);
 
@@ -48,7 +56,7 @@ int main(int argc, char* argv[]) {
 int exec_args (char** argv)
 {
   if (argv[0] == NULL) {
-    return 1;
+    return 0;
   }
 
   for (int i=0; i<num_builtins(); i++) {
@@ -59,8 +67,6 @@ int exec_args (char** argv)
   return 1;
 }
 
-
-
 char* read_line()
 {
   int bufferSize = MYSH_RL_BUFSIZE;
@@ -68,12 +74,12 @@ char* read_line()
   char* buffer = malloc(sizeof(char) * bufferSize);
   char c;
 
-  while(1){
+  while(1) {
     c = getchar();   // or c = getc(stdin);
     if (c == EOF || c == '\n') {
       buffer[position] = '\0';
       return buffer;
-    }
+    } // Get line
 
     buffer[position] = c;
     position++;
@@ -81,38 +87,35 @@ char* read_line()
       bufferSize += MYSH_RL_BUFSIZE;
       buffer = realloc(buffer, bufferSize);
       if(!buffer){
-        fprintf(stderr, "allocation error\n");
+        fprintf(stderr, "realloc() failed..\n");
         exit(EXIT_FAILURE);
-      }
-    }
-
-
+      } // Memory allocation failure
+    } // Realloc when buffer full
   }
-
+  return NULL;
 }
 
 char** split_line (char* line)
 {
   int pos = 0, size = TOK_SIZE;
   char** tokens = calloc ( size, sizeof(char*) );
-  if (!tokens) {
-    perror("memory alloc failed..\n");
+  if (!tokens) { // Memory allocation failure
+    perror("calloc() failed..\n");
     exit(EXIT_FAILURE);
   }
   char* token = strtok ( line, TOK_DELIMS );
 
-  while (token != NULL) {
-    printf("%s\n", token);
+  while (token != NULL) { // Get all the split arguments
     tokens[pos] = token;
     pos++;
-    if (pos >= size) {
+    if (pos + 1 >= size) {
       size += TOK_SIZE;
       tokens = realloc ( tokens, size*sizeof(char*) );
       if (!tokens) {
-        perror("memory realloc failed..\n");
+        perror("realloc() failed..\n");
         exit(EXIT_FAILURE);
       }
-    }
+    } // Memory reallocation
     token = strtok( NULL, TOK_DELIMS );
   }
 
@@ -125,27 +128,26 @@ char** split_line (char* line)
 int mysh_cd(char** argv){
   if (strcmp(argv[0], "cd") != 0){
     fprintf(stderr, "ERROR: not 'cd' command\n");
-    exit(EXIT_FAILURE);
+    return 1;
   }
   if (!argv[1]) {
     fprintf(stderr, "ERROR\n");
-    exit(EXIT_FAILURE);
+    return 1;
   }
   if (chdir(argv[1]) != 0){
     fprintf(stderr, "FAIL: cannot load to directory: %s\n", argv[1]);
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   return 1;
-
 }
 
 int mysh_help(char** argv) {
   int content_size = sizeof(mysh_builtins) / sizeof(char*);
-  printf("Weiran and Jianhui's shell content:\n");
+  printf("Weiran and Jianhui's shell includes:\n");
   int i;
 
-  for(i = 0; i < content_size; i++){
+  for(i = 0; i < content_size; i++) {
     if (strcmp(mysh_builtins[i], "cd") == 0){
       printf("%s : to change directory.\n", mysh_builtins[i]);
     }
@@ -155,14 +157,39 @@ int mysh_help(char** argv) {
     else if (strcmp(mysh_builtins[i], "exit") == 0){
       printf("%s : to exit the shell.\n", mysh_builtins[i] );
     }
+    else if (strcmp(mysh_builtins[i], "run") == 0){
+      printf("%s : to run the executables with provided arguments.\n", mysh_builtins[i] );
+    }
   }
   printf("Use the man command for information on other programs.\n");
 
   return 1;
 }
 
-int mysh_exit(char** argv) {
-  exit(0);
+int mysh_exit (char** argv) {
+  return 0;
+}
+
+int mysh_run (char** argv) {
+  int status;
+  char** args = argv+1;
+
+  pid_t pid = fork();
+  if (pid == -1) {
+    perror ("fork() failed..\n");
+    return 1;
+  }
+  if (pid == 0) {
+    if ( execvp(args[0], args) == -1 ) {
+      perror("exec() failed..");
+    }
+  } else {
+    do {
+      waitpid (pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+  }
+
+  return 1;
 }
 
 int num_builtins () {
