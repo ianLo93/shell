@@ -5,28 +5,41 @@
 #define TOK_SIZE 64
 #define TOK_DELIMS " \t\r\n\a"
 
+char* read_line ();
 char** split_line (char* line);
+int exec_args (char** args);
 
 int main(int argc, char* argv[]) {
-  size_t size = TOK_SIZE;
-  char* a = NULL;
-  char** tokens;
+  char* line;
+  char** args;
+  int status;
 
-  getline( &a, &size, stdin );
-  // printf("%s\n", a);
-  tokens = split_line(a);
-  if (!tokens) {
-    perror("get Nothing\n");
-    return 1;
-  }
+  do {
+    printf("> ");
+    line = read_line ();
+    args = split_line (line);
+    status = exec_args (args);
 
-  return 0;
+    free (line);
+    free (args);
+
+  } while (status);
+
+  return EXIT_SUCCESS;
 }
+
+char* read_line () { }
+
+int exec_args (char** args) { }
 
 char** split_line (char* line)
 {
   int pos = 0, size = TOK_SIZE;
   char** tokens = calloc ( size, sizeof(char*) );
+  if (!tokens) {
+    perror("memory alloc failed..\n");
+    exit(EXIT_FAILURE);
+  }
   char* token = strtok ( line, TOK_DELIMS );
 
   while (token != NULL) {
@@ -36,6 +49,10 @@ char** split_line (char* line)
     if (pos >= size) {
       size += TOK_SIZE;
       tokens = realloc ( tokens, size*sizeof(char*) );
+      if (!tokens) {
+        perror("memory realloc failed..\n");
+        exit(EXIT_FAILURE);
+      }
     }
     token = strtok( NULL, TOK_DELIMS );
   }
