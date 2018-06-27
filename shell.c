@@ -12,13 +12,13 @@ int exec_args (char** args);
 int main(int argc, char* argv[]) {
   char* line;
   char** args;
-  int status;
+  int status = 1;
 
   do {
     printf("> ");
     line = read_line ();
     args = split_line (line);
-    status = exec_args (args);
+    // status = exec_args (args);
 
     free (line);
     free (args);
@@ -30,7 +30,10 @@ int main(int argc, char* argv[]) {
 
 char* read_line () { }
 
-int exec_args (char** args) { }
+int exec_args (char** args)
+{
+
+}
 
 char** split_line (char* line)
 {
