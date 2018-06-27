@@ -5,18 +5,25 @@
 
 #define TOK_SIZE 64
 #define TOK_DELIMS " \t\r\n\a"
-#define LSH_RL_BUFSIZE 1024
+#define MYSH_RL_BUFSIZE 1024
+
+// global variable
+char* mysh_builtins[] = { "cd", "help", "exit" };
 
 char* read_line();
 char** split_line (char* line);
-int lsh_cd(char** argv);
-void lsh_help();
-int lsh_exit();
-int exec_args (char** args);
+int exec_args (char** argv);
 
-// global variable
-char* lsh_help_content[] = {"cd", "help", "exit"};
+int mysh_cd(char** argv);
+int mysh_help(char** argv);
+int mysh_exit(char** argv);
+int num_builtins();
 
+int (*builtin_funcs[]) (char** argv) = {
+  & mysh_cd,
+  & mysh_help,
+  & mysh_exit
+};
 
 int main(int argc, char* argv[]) {
   char* line;
@@ -27,7 +34,7 @@ int main(int argc, char* argv[]) {
     printf("> ");
     line = read_line ();
     args = split_line (line);
-    // status = exec_args (args);
+    status = exec_args (args);
 
     free (line);
     free (args);
@@ -38,15 +45,25 @@ int main(int argc, char* argv[]) {
 }
 
 
-// int exec_args (char** args)
-// {
-//
-// }
+int exec_args (char** argv)
+{
+  if (argv[0] == NULL) {
+    return 1;
+  }
+
+  for (int i=0; i<num_builtins(); i++) {
+    if ( strcmp(argv[0], mysh_builtins[i]) == 0 )
+      return (*builtin_funcs[i]) (argv);
+  }
+
+  return 1;
+}
 
 
 
-char* read_line(){
-  int bufferSize = LSH_RL_BUFSIZE;
+char* read_line()
+{
+  int bufferSize = MYSH_RL_BUFSIZE;
   int position = 0;
   char* buffer = malloc(sizeof(char) * bufferSize);
   char c;
@@ -61,7 +78,7 @@ char* read_line(){
     buffer[position] = c;
     position++;
     if (position == bufferSize){
-      bufferSize += LSH_RL_BUFSIZE;
+      bufferSize += MYSH_RL_BUFSIZE;
       buffer = realloc(buffer, bufferSize);
       if(!buffer){
         fprintf(stderr, "allocation error\n");
@@ -105,7 +122,7 @@ char** split_line (char* line)
 }
 
 
-int lsh_cd(char** argv){
+int mysh_cd(char** argv){
   if (strcmp(argv[0], "cd") != 0){
     fprintf(stderr, "ERROR: not 'cd' command\n");
     exit(EXIT_FAILURE);
@@ -119,29 +136,35 @@ int lsh_cd(char** argv){
     exit(EXIT_FAILURE);
   }
 
-  return 0;
+  return 1;
 
 }
 
-void lsh_help(){
-  int content_size = sizeof(lsh_help_content) / sizeof(char*);
+int mysh_help(char** argv) {
+  int content_size = sizeof(mysh_builtins) / sizeof(char*);
   printf("Weiran and Jianhui's shell content:\n");
   int i;
 
   for(i = 0; i < content_size; i++){
-    if (strcmp(lsh_help_content[i], "cd") == 0){
-      printf("%s : to change directory.\n", lsh_help_content[i]);
+    if (strcmp(mysh_builtins[i], "cd") == 0){
+      printf("%s : to change directory.\n", mysh_builtins[i]);
     }
-    else if (strcmp(lsh_help_content[i], "help") == 0){
-      printf("%s : to print out help content.\n", lsh_help_content[i] );
+    else if (strcmp(mysh_builtins[i], "help") == 0){
+      printf("%s : to print out help content.\n", mysh_builtins[i] );
     }
-    else if (strcmp(lsh_help_content[i], "exit") == 0){
-      printf("%s : to exit the shell.\n", lsh_help_content[i] );
+    else if (strcmp(mysh_builtins[i], "exit") == 0){
+      printf("%s : to exit the shell.\n", mysh_builtins[i] );
     }
   }
   printf("Use the man command for information on other programs.\n");
+
+  return 1;
 }
 
-int lsh_exit(){
-  return 0;
+int mysh_exit(char** argv) {
+  exit(0);
+}
+
+int num_builtins () {
+  return sizeof(mysh_builtins) / sizeof(char**);
 }
