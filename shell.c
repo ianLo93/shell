@@ -98,8 +98,8 @@ char** split_line (char* line)
     }
     token = strtok( NULL, TOK_DELIMS );
   }
-  
-  token[pos] = NULL;
+
+  tokens[pos] = NULL;
 
   return tokens;
 }
