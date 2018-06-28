@@ -63,6 +63,7 @@ int exec_args (char** argv)
     if ( strcmp(argv[0], mysh_builtins[i]) == 0 )
       return (*builtin_funcs[i]) (argv);
   }
+  printf("Unkown command\n");
 
   return 1;
 }
@@ -126,16 +127,12 @@ char** split_line (char* line)
 
 
 int mysh_cd(char** argv){
-  if (strcmp(argv[0], "cd") != 0){
-    fprintf(stderr, "ERROR: not 'cd' command\n");
-    return 1;
-  }
   if (!argv[1]) {
     fprintf(stderr, "ERROR\n");
     return 1;
   }
   if (chdir(argv[1]) != 0){
-    fprintf(stderr, "FAIL: cannot load to directory: %s\n", argv[1]);
+    perror("cd failed")
     return 1;
   }
 
