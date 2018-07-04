@@ -39,7 +39,7 @@ int main() {
     if (getcwd ( cwd, sizeof(cwd) ) == NULL) {
       perror("getcwd() failed..");
     }
-    printf("%s > ", cwd);
+    printf("%s> ", cwd);
     line = read_line ();
     argv = split_line (line);
     status = exec_args (argv);
@@ -128,11 +128,11 @@ char** split_line (char* line)
 
 int mysh_cd(char** argv){
   if (!argv[1]) {
-    fprintf(stderr, "ERROR\n");
+    fprintf(stderr, "cd failed\n");
     return 1;
   }
   if (chdir(argv[1]) != 0){
-    perror("cd failed")
+    perror("cd failed");
     return 1;
   }
 
@@ -180,6 +180,7 @@ int mysh_run (char** argv) {
     if ( execvp(args[0], args) == -1 ) {
       perror("exec() failed..");
     }
+    exit(1);
   } else {
     do {
       waitpid (pid, &status, WUNTRACED);
