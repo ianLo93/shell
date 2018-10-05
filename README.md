@@ -14,15 +14,17 @@ run <full-executable-file-path>
 ```
 Replace <full-executable-file-path> to the executable path that you want to run, specify the file name. For example, *"run ./MyApp.out"*.
 
-- Exit the shell
+- Exit
 ```
 exit
 ```
+Exit the shell
 
 - Help
 ```
-Shell license and help with the command arguments
+help
 ```
+Shell license and help with the command arguments
 
 ## Usage
 Compile the file on terminal:
